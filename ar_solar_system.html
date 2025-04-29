@@ -1,34 +1,35 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>Minimal MindAR Test (AF 1.2.0)</title> <!-- Змінив заголовок -->
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- !!! ЗМІНЕНО ВЕРСІЮ A-FRAME НА 1.2.0 !!! -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <!-- Залишаємо MindAR 1.1.4, як у попередній спробі -->
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
-    <style>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script> <!-- Залишимо A-Frame 1.2.0 -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script> <!-- Залишимо MindAR 1.1.4 -->
+    <title>Official MindAR Basic Example</title> <!-- Змінив заголовок -->
+     <style>
       /* Стилі для інтерфейсу MindAR */
+      body { margin: 0; }
       .mindar-ui-overlay { display: flex; }
       .mindar-ui-scanning.left, .mindar-ui-scanning.right { flex-grow: 1; }
       .mindar-ui-scanning .scanning .inner .scanline { background: white; }
       .mindar-ui-loading .loader .tip { color: white; }
     </style>
-</head>
-<body>
-   <a-scene
-    mindar-image="imageTargetSrc: ./hiro.mind; maxTrack: 1; uiScanning: yes; uiLoading: yes;"
-    color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights"
-    vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  </head>
+  <body>
+    <!-- Використовуємо стандартний маркер examples/assets/card-example/card.mind з репозиторію MindAR -->
+    <!-- Оскільки ми не маємо цього файлу, тимчасово використаємо ВАШ hiro.mind -->
+    <a-scene mindar-image="imageTargetSrc: ./hiro.mind; uiScanning: yes; uiLoading: yes;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-assets>
+        <!-- Замість моделі літака додамо кубик -->
+         <!-- <a-asset-item id="avatarModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/softmind/scene.gltf"></a-asset-item> -->
+      </a-assets>
 
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <!-- Просто ціль без складного вмісту, лише один кубик -->
-        <a-entity mindar-image-target="targetIndex: 0">
-            <a-box color="red" position="0 0.5 0"></a-box>
-        </a-entity>
-
+      <!-- Використовуємо targetIndex 0, як і раніше -->
+      <a-entity mindar-image-target="targetIndex: 0">
+        <!-- Простий зелений кубик замість моделі -->
+        <a-box color="green" position="0 0.5 0" scale="0.5 0.5 0.5"></a-box>
+        <!-- <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="0.004 0.004 0.004" src="#avatarModel" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"> -->
+      </a-entity>
     </a-scene>
-</body>
+  </body>
 </html>
