@@ -2,25 +2,18 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>MindAR Test - Simplified Scene</title>
+    <title>MindAR Test - Bare Minimum</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
-    <style>
-      body { margin: 0; }
-      .mindar-ui-overlay { display: flex; }
-      .mindar-ui-scanning.left, .mindar-ui-scanning.right { flex-grow: 1; }
-      .mindar-ui-scanning .scanning .inner .scanline { background: white; }
-      .mindar-ui-loading .loader .tip { color: white; }
-    </style>
+    <style>body { margin: 0; }</style> <!-- Мінімальні стилі -->
 </head>
-<body>
-    <!-- ВИДАЛЕНО деякі атрибути з a-scene -->
-    <a-scene mindar-image="imageTargetSrc: ./hiro.mind; uiScanning: yes; uiLoading: yes;">
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity mindar-image-target="targetIndex: 0">
-        <a-box color="blue" position="0 0.5 0" scale="0.5 0.5 0.5"></a-box> <!-- Змінив колір для різноманіття -->
-      </a-entity>
-    </a-scene>
-</body>
+<!-- У тілі НЕМАЄ нічого, крім a-scene -->
+<body><a-scene mindar-image="imageTargetSrc: ./hiro.mind;" embed vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <!-- Ми навіть видалили UI сканування/завантаження для чистоти тесту -->
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    <a-entity mindar-image-target="targetIndex: 0">
+        <a-box color="purple" position="0 0.5 0" scale="0.5 0.5 0.5"></a-box> <!-- Ще інший колір -->
+    </a-entity>
+</a-scene></body>
 </html>
