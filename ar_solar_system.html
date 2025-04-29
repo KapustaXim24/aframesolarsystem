@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AR Solar System (MindAR)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Підключення A-Frame -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <!-- Підключення MindAR для A-Frame -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <!-- Наші власні компоненти (JavaScript) - ТІ САМІ, ЩО Й У VR! -->
+     <script>
+        const day = 24.0 * 60 * 60; // Тривалість земного дня у секундах
+        const G = 6.67430e-11;      // Гравітаційна стала (м^3 кг^-1 с^-2)
+        // !!! ВАЖЛИВО: Масштаби для AR, ймовірно, потрібно буде ЗМЕНШИТИ !!!
+        const visualScaleFactor = 1e11; // СПРОБУЙТЕ ЗБІЛЬШИТИ ЗНАМЕННИК
+        const radiusScaleFactor = 5e7; // СПРОБУЙТЕ ЗБІЛЬШИТИ ЗНАМЕННИК
+
+        // --- КОПІЯ КОМПОНЕНТІВ 'planet' та 'main' З ФАЙЛУ vr_solar_system.html СЮДИ ---
+        // Компонент 'planet'
+        AFRAME.registerComponent('planet', {
+             schema: {
+                name: { type: 'string', default: "" },
+                dist: { type: 'number', default: 0 },
+                mass: { type: 'number', default: 0 },
+                T: { type: 'number', default: 0 },
+                v: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
+                a: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
+                pos: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
+                radius: {type: 'number', default: 1}
+            },
+             init: function () {
+                this.data.T *= day;
+                this.data.pos.x = this.data.dist;
+                this.data.pos.y = 0;
+                this.data.pos.z = 0;
+                // В АР НЕ ВСТАНОВЛЮЄМО ПОЧАТКОВУ ВІЗУАЛЬНУ ПОЗИЦІЮ ТУТ
+                // this.el.setAttribute('position', ...);
+                this.el.setAttribute('geometry', {
+                   radius: this.data.radius / radiusScaleFactor // Масштабований радіус
+                });
+                if (this.data.T !== 0) {
+                   this.data.v.y = (2 * Math.PI * this.data.dist) / this.data.T;
+                } else { this.data.v.y = 0; }
+                this.data.v.x = 0; this.data.v.z = 0;
+                this.data.a.x = 0; this.data.a.y = 0; this.data.a.z = 0;
+             }
+        });
+        // Компонент 'main'
+        AFRAME.registerComponent('main', {
+            init: function () {
+                // В AR шукаємо планети всередині 'mindar-image-target'
+                this.solarSystemTarget = document.querySelector('#solar-system-target');
+                if (this.solarSystemTarget) {
+                    this.solarSystem = this.solarSystemTarget.querySelectorAll('[planet]');
+                    console.log("Found planets in AR target:", this.solarSystem.length);
+                } else {
+                     console.error("Could not find #solar-system-target entity!");
+                     this.solarSystem = [];
+                 }
+            },
+            tick: function (time, deltaTime) {
+                if (!this.solarSystem || this.solarSystem.length === 0) { return; }
+                const dt = day / 3;
+                const planetsData = [];
+                this.solarSystem.forEach(entity => { planetsData.push(entity.components.planet.data); });
+
+                // Розрахунок прискорень (як у VR)
+                 for (let i = 0; i < planetsData.length; i++) {
+                    const planet_i = planetsData[i];
+                    planet_i.a.x = 0; planet_i.a.y = 0; planet_i.a.z = 0;
+                    if (planet_i.mass === 0 || planet_i.T === 0) continue;
+                    for (let j = 0; j < planetsData.length; j++) {
+                        if (i === j) continue;
+                        const planet_j = planetsData[j];
+                        const dx = planet_j.pos.x - planet_i.pos.x;
+                        const dy = planet_j.pos.y - planet_i.pos.y;
+                        const dz = planet_j.pos.z - planet_i.pos.z;
+                        const distSq = dx * dx + dy * dy + dz * dz;
+                        if (distSq === 0) continue;
+                        const dist = Math.sqrt(distSq);
+                        const forceMagnitude = (G * planet_j.mass) / distSq;
+                        planet_i.a.x += forceMagnitude * (dx / dist);
+                        planet_i.a.y += forceMagnitude * (dy / dist);
+                        planet_i.a.z += forceMagnitude * (dz / dist);
+                    }
+                 }
+                // Оновлення швидкостей та позицій (як у VR)
+                for (let i = 0; i < planetsData.length; i++) {
+                    const planet_i = planetsData[i];
+                    if (planet_i.T === 0) continue;
+                    planet_i.v.x += planet_i.a.x * dt;
+                    planet_i.v.y += planet_i.a.y * dt;
+                    planet_i.v.z += planet_i.a.z * dt;
+                    planet_i.pos.x += planet_i.v.x * dt;
+                    planet_i.pos.y += planet_i.v.y * dt;
+                    planet_i.pos.z += planet_i.v.z * dt;
+
+                    // Оновлення ВІЗУАЛЬНОЇ позиції ВІДНОСНО МАРКЕРА
+                    this.solarSystem[i].setAttribute('position', {
+                        x: planet_i.pos.x / visualScaleFactor,
+                        y: planet_i.pos.y / visualScaleFactor,
+                        z: planet_i.pos.z / visualScaleFactor
+                    });
+                 }
+             }
+        });
+    </script>
+
+    <style>
+      /* Стилі для інтерфейсу MindAR */
+      .mindar-ui-overlay { display: flex; }
+      .mindar-ui-scanning.left, .mindar-ui-scanning.right { flex-grow: 1; }
+      .mindar-ui-scanning .scanning .inner .scanline { background: white; }
+      .mindar-ui-loading .loader .tip { color: white; }
+    </style>
+
+</head>
+<body>
+    <!-- В AR використовуємо body як контейнер -->
+    <!-- Сцена MindAR: вказуємо шлях до файлу маркера -->
+    <a-scene
+        mindar-image="imageTargetSrc: ./my_marker.mind; maxTrack: 1; uiScanning: yes; uiLoading: yes;"
+        color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
+        main> <!-- Додаємо компонент 'main' до сцени -->
+
+        <!-- Камера MindAR (зазвичай не потребує ручного налаштування позиції) -->
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- Цільовий маркер (targetIndex: 0 - перший маркер у .mind файлі) -->
+        <!-- ВСЯ СОНЯЧНА СИСТЕМА БУДЕ ВСЕРЕДИНІ ЦЬОГО КОНТЕЙНЕРА -->
+        <!-- Додаємо ID, щоб компонент 'main' міг знайти планети -->
+        <a-entity id="solar-system-target" mindar-image-target="targetIndex: 0">
+
+            <!-- Копіюємо ВСІ <a-entity> для Сонця та планет з vr_solar_system.html сюди -->
+            <!-- ВАЖЛИВО: ПОЧАТКОВІ ПОЗИЦІЇ БУДУТЬ ВСТАНОВЛЕНІ ВІДНОСНО МАРКЕРА -->
+
+            <!-- Сонце -->
+            <a-entity
+                geometry="primitive: sphere;"
+                material="src: url(textures/sun.jpg); emissive: #ffcc00; emissiveIntensity: 0.6"
+                planet="name: Sun; dist: 0; mass: 1.989e30; T: 0; radius: 696340000">
+                <a-light type="point" intensity="1.5" distance="50" position="0 0 0"></a-light> <!-- Зменшено distance -->
+            </a-entity>
+
+            <!-- Меркурій -->
+            <a-entity geometry="primitive: sphere;" material="src: url(textures/mercury.jpg)" planet="name: Mercury; dist: 57.91e9; mass: 3.285e23; T: 88; radius: 2439700"></a-entity>
+            <!-- Венера -->
+            <a-entity geometry="primitive: sphere;" material="src: url(textures/venus.jpg)" planet="name: Venus; dist: 108.2e9; mass: 4.867e24; T: 224.7; radius: 6051800"></a-entity>
+            <!-- Земля -->
+            <a-entity geometry="primitive: sphere;" material="src: url(textures/earth.jpg)" planet="name: Earth; dist: 149.6e9; mass: 5.972e24; T: 365.25; radius: 6371000"></a-entity>
+            <!-- Марс -->
+            <a-entity geometry="primitive: sphere;" material="src: url(textures/mars.jpg)" planet="name: Mars; dist: 227.9e9; mass: 6.39e23; T: 687; radius: 3389500"></a-entity>
+            <!-- Юпітер -->
+            <a-entity geometry="primitive: sphere;" material="src: url(textures/jupiter.jpg)" planet="name: Jupiter; dist: 778.5e9; mass: 1.898e27; T: 4333; radius: 69911000"></a-entity>
+            <!-- Сатурн -->
+            <a-entity geometry="primitive: sphere;" material="src: url(textures/saturn.jpg)" planet="name: Saturn; dist: 1434e9; mass: 5.683e26; T: 10759; radius: 58232000">
+                 <a-ring color="#8B7D80" rotation="-75 0 0" radius-inner="1.2" radius-outer="2.2"></a-ring>
+                 <a-ring color="#A09383" rotation="-75 0 0" radius-inner="2.3" radius-outer="3.0"></a-ring>
+            </a-entity>
+            <!-- Уран -->
+            <a-entity geometry="primitive: sphere;" material="src: url(textures/uranus.jpg)" planet="name: Uranus; dist: 2871e9; mass: 8.681e25; T: 30687; radius: 25362000"></a-entity>
+            <!-- Нептун -->
+            <a-entity geometry="primitive: sphere;" material="src: url(textures/neptune.jpg)" planet="name: Neptune; dist: 4495e9; mass: 1.024e26; T: 60190; radius: 24622000"></a-entity>
+
+             <!-- Додайте навколишнє освітлення -->
+             <a-light type="ambient" color="#AAA"></a-light> <!-- Можна зробити яскравіше -->
+        </a-entity>
+    </a-scene>
+</body>
+</html>
