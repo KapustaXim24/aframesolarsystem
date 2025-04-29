@@ -2,18 +2,18 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>VR Solar System (Larger Planets)</title> <!-- Змінив заголовок -->
+    <title>VR Solar System (Extreme Scale Test)</title> <!-- Змінив заголовок -->
     <meta name="description" content="Solar System Simulation in VR using A-Frame">
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script>
         const day = 24.0 * 60 * 60;
         const G = 6.67430e-11;
-        // Зменшуємо масштаб відстаней, щоб планети були трохи ближче
-        const visualScaleFactor = 3e8; // Було 1e9, потім 5e8
-        // !!! ЗНАЧНО ЗМЕНШУЄМО МАСШТАБ РАДІУСІВ, щоб планети були більші !!!
-        const radiusScaleFactor = 1e6; // Було 5e6, потім 2e6
+        // !!! ДУЖЕ СИЛЬНО ЗМЕНШУЄМО МАСШТАБ ВІДСТАНЕЙ !!!
+        const visualScaleFactor = 1e7; // Було 3e8. Тепер планети будуть ДУЖЕ близько візуально.
+        // !!! ДУЖЕ СИЛЬНО ЗМЕНШУЄМО МАСШТАБ РАДІУСІВ !!!
+        const radiusScaleFactor = 1e5; // Було 1e6. Планети будуть ДУЖЕ великі візуально.
 
-        // --- Компонент 'planet' (без змін в логіці) ---
+        // --- Компонент 'planet' ---
         AFRAME.registerComponent('planet', {
             schema: {
                 name: { type: 'string', default: "" },
@@ -30,13 +30,13 @@
                 this.data.pos.x = this.data.dist;
                 this.data.pos.y = 0;
                 this.data.pos.z = 0;
+                // Встановлюємо початкову візуальну позицію
                 this.el.setAttribute('position', {
                     x: this.data.dist / visualScaleFactor,
                     y: 0,
                     z: 0
                 });
                  this.el.setAttribute('geometry', {
-                    // Розрахунок візуального радіусу з новим scaleFactor
                     radius: this.data.radius / radiusScaleFactor
                  });
                 if (this.data.T !== 0) {
@@ -44,15 +44,60 @@
                 } else { this.data.v.y = 0; }
                  this.data.v.x = 0; this.data.v.z = 0;
                  this.data.a.x = 0; this.data.a.y = 0; this.data.a.z = 0;
-                 console.log("Initialized planet:", this.data.name, "Initial visual pos:", this.el.getAttribute('position'), "Visual Radius:", this.el.getAttribute('geometry').radius);
+                 console.log("Initialized planet:", this.data.name, "Visual Radius:", this.el.getAttribute('geometry').radius, "Initial Visual Pos X:", this.el.getAttribute('position').x);
             }
         });
 
-        // --- Компонент 'main' (залишаємо логування, щоб бачити позиції) ---
+        // --- Компонент 'main' ---
         AFRAME.registerComponent('main', {
             init: function () {
                 this.solarSystem = this.el.sceneEl.querySelectorAll('[planet]');
-                 if(!this.solarSystem || this.solarSystem.length === 0) {
-                    console.error("MAIN INIT: No planets found!");
-                } else {
-                     console.log("MAIN INIT: Found planets:", this
+                 console.log("MAIN INIT: Found planets:", this.solarSystem.length);
+                 // Додамо затримку перед першим tick, можливо? Або перевіримо дані.
+                 this.planetsData = []; // Створимо масив даних тут
+                 let dataReady = true;
+                 this.solarSystem.forEach((entity, index) => {
+                     if (!entity.components.planet) {
+                         console.error("MAIN INIT: Planet at index", index, "missing planet component!");
+                         dataReady = false;
+                     } else {
+                         this.planetsData.push(entity.components.planet.data);
+                     }
+                 });
+                 this.readyToTick = dataReady;
+                 if (!this.readyToTick) {
+                     console.error("MAIN INIT: Not all planet data was ready!");
+                 }
+            },
+            tick: function (time, deltaTime) {
+                // Не починаємо, доки всі дані не готові
+                if (!this.readyToTick || !this.planetsData || this.planetsData.length !== this.solarSystem.length) { return; }
+
+                // Зробимо крок ДУЖЕ малим, щоб уникнути "вибуху" симуляції
+                const dt = day / 50; // Було day / 10
+
+                // Розрахунок сил/прискорень (як раніше)
+                for (let i = 0; i < this.planetsData.length; i++) {
+                    const planet_i = this.planetsData[i];
+                    planet_i.a.x = 0; planet_i.a.y = 0; planet_i.a.z = 0;
+                    if (planet_i.mass === 0 || planet_i.T === 0) continue;
+                    for (let j = 0; j < this.planetsData.length; j++) {
+                        if (i === j) continue;
+                        const planet_j = this.planetsData[j];
+                        const dx = planet_j.pos.x - planet_i.pos.x;
+                        const dy = planet_j.pos.y - planet_i.pos.y;
+                        const dz = planet_j.pos.z - planet_i.pos.z;
+                        const distSq = dx * dx + dy * dy + dz * dz;
+                        if (distSq === 0) continue;
+                        const dist = Math.sqrt(distSq);
+                        if (isNaN(dist) || dist ===-entity>
+        <a-entity geometry="primitive: sphere;" material="src: url(textures/earth.jpg)" planet="name: Earth; dist: 149.6e9; mass: 5.972e24; T: 365.25; radius: 6371000"></a-entity>
+        <a-entity geometry="primitive: sphere;" material="src: url(textures/mars.jpg)" planet="name: Mars; dist: 227.9e9; mass: 6.39e23; T: 687; radius: 3389500"></a-entity>
+        <a-entity geometry="primitive: sphere;" material="src: url(textures/jupiter.jpg)" planet="name: Jupiter; dist: 778.5e9; mass: 1.898e27; T: 4333; radius: 69911000"></a-entity>
+        <a-entity geometry="primitive: sphere;" material="src: url(textures/saturn.jpg)" planet="name: Saturn; dist: 1434e9; mass: 5.683e26; T: 10759; radius: 58232000"> <a-ring color="#8B7D80" rotation="-75 0 0" radius-inner="1.2" radius-outer="2.2"></a-ring> <a-ring color="#A09383" rotation="-75 0 0" radius-inner="2.3" radius-outer="3.0"></a-ring> </a-entity>
+        <a-entity geometry="primitive: sphere;" material="src: url(textures/uranus.jpg)" planet="name: Uranus; dist: 2871e9; mass: 8.681e25; T: 30687; radius: 25362000"></a-entity>
+        <a-entity geometry="primitive: sphere;" material="src: url(textures/neptune.jpg)" planet="name: Neptune; dist: 4495e9; mass: 1.024e26; T: 60190; radius: 24622000"></a-entity>
+        <a-light type="ambient" color="#444"></a-light>
+    </a-scene>
+</body>
+</html>
